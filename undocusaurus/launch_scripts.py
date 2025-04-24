@@ -5,7 +5,7 @@ import subprocess
 def launch_scripts(target_folder):
     # Directory containing the scripts
     scripts_folder = os.path.dirname(os.path.abspath(__file__))
-    scripts_to_run = ["rename_md_files.py", "remove_md_headers.py", "fix_markdown_links.py", "add_header_if_missing.py", "remove_details_block.py", "remove history detail block"]
+    scripts_to_run = ["rename_md_files.py", "remove_md_headers.py", "fix_markdown_links.py", "add_header_if_missing.py", "remove_details_block.py"]
 
     # Check if the target folder exists
     if not os.path.isdir(target_folder):
