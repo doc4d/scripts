@@ -21,5 +21,6 @@ python docusaurusify.py <dossier_source> [-o <dossier_sortie>] [-v] [-f]
 ### Example
 
 ```bash
-python docusaurusify.py -f /path/to/4D-AIKit /path/to/docs/docs/aikit
+python docusaurusify.py -f /path/to/4D-AIKit -o /path/to/docs/docs/aikit
+python docusaurusify.py -f C:\4D-AIKit -o C:\Github\docs\docs\aikit
 ```
