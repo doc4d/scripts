@@ -65,6 +65,76 @@ def get_output_path(input_path, base_input_path, output_dir):
     return os.path.join(output_dir, rel_path)
 
 
+def convert_admonitions(content):
+    """Convert GitHub-style admonitions to Docusaurus admonition syntax.
+
+    Converts:
+        > [!TIP]
+        > Title or content
+        >
+        > More content
+
+    To:
+        :::tip Title or content
+
+        More content
+
+        :::
+    """
+    lines = content.split('\n')
+    result = []
+    i = 0
+
+    admonition_types = {'TIP': 'tip', 'NOTE': 'note', 'WARNING': 'warning',
+                        'CAUTION': 'caution', 'IMPORTANT': 'danger'}
+
+    while i < len(lines):
+        # Check for GitHub admonition start: > [!TYPE]
+        match = re.match(r'^>\s*\[!(TIP|NOTE|WARNING|CAUTION|IMPORTANT)\]\s*$', lines[i])
+        if match:
+            admonition_type = admonition_types[match.group(1)]
+            i += 1
+
+            # Collect all lines that are part of this blockquote
+            block_lines = []
+            while i < len(lines) and re.match(r'^>', lines[i]):
+                # Strip the leading > and optional space
+                line = re.sub(r'^>\s?', '', lines[i])
+                block_lines.append(line)
+                i += 1
+
+            # Find the title (first non-empty line)
+            title = ''
+            content_start = 0
+            for j, line in enumerate(block_lines):
+                if line.strip():
+                    title = line.strip()
+                    content_start = j + 1
+                    break
+
+            # Collect remaining content lines
+            body_lines = block_lines[content_start:]
+
+            # Strip leading/trailing empty lines from body
+            while body_lines and not body_lines[0].strip():
+                body_lines.pop(0)
+            while body_lines and not body_lines[-1].strip():
+                body_lines.pop()
+
+            # Build the Docusaurus admonition
+            result.append(f':::{admonition_type} {title}')
+            if body_lines:
+                result.append('')
+                result.extend(body_lines)
+            result.append('')
+            result.append(':::')
+        else:
+            result.append(lines[i])
+            i += 1
+
+    return '\n'.join(result)
+
+
 def fix_markdown_links(content, file_path, base_input_path, is_readme_file=False):
     """Fix markdown links according to the specified rules."""
     
@@ -220,6 +290,7 @@ def process_markdown_files(folder_path, output_dir, verbose=False):
         content = "".join(lines)
         is_readme_file = os.path.basename(file_path).lower() == "readme.md"
         fixed_content = fix_markdown_links(content, file_path, folder_path, is_readme_file)
+        fixed_content = convert_admonitions(fixed_content)
         
         if title:
             # Generate the header using the normalized filename for ID
