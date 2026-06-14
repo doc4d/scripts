@@ -1,0 +1,29 @@
+linter/4d-doc-lint.yml
+  h_3877e81599a6f5 1-22
+linter/lint_4d_doc.py
+  h_3877e81599a6f5 50
+linter/README.md
+  s_75480e64a334f6::t_05319f0ab1ba27 54-71
+  h_3877e81599a6f5 29,32,35,38,41,44,47,89-93
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.4",
+  "base_commit_sha": "7bc78a43dd473468659cfe220ca9137533f806d5",
+  "prompts": {},
+  "humans": {
+    "h_3877e81599a6f5": {
+      "author": "Eric Marchand <eric.marchand@4d.com>"
+    }
+  },
+  "sessions": {
+    "s_75480e64a334f6": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "93fc6688-6ba1-4bd7-b915-10ef3af51a74",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Eric Marchand <eric.marchand@4d.com>"
+    }
+  }
+}
