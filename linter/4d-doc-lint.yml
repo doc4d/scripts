@@ -1,0 +1,22 @@
+# Configuration for lint_4d_doc.py
+#
+# Copy this file to the project root as ".4d-doc-lint.yml" to have it
+# auto-loaded, or pass it explicitly with: --config 4d-doc-lint.yml
+#
+# CLI flags (--enable / --disable / --source-dir / --docs-dir) always win
+# over the values set here.
+
+# Where the 4D class sources and their Markdown docs live (relative to the
+# base PATH given on the command line, or absolute).
+source_dir: Project/Sources/Classes
+docs_dir: Documentation/Classes
+
+# Turn rules on/off. A class / function / computed property / constructor whose
+# name starts with "_" is treated as private and never required to be documented.
+rules:
+  class-documented: true              # public class must have a doc file
+  class-title: true                   # doc's first heading must be the class name
+  function-documented: true           # each public function has its own title
+  computed-property-documented: true  # each public computed property is mentioned
+  linked-classes: false               # classes used in ctor/functions are linked (opt-in)
+  constructor-documented: false       # the constructor is documented (opt-in)
