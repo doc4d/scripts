@@ -13,6 +13,7 @@ import argparse
 import shutil
 import glob
 import re
+from urllib.parse import unquote, quote
 
 
 def generate_header(file_name, title):
@@ -173,6 +174,69 @@ def fix_markdown_links(content, file_path, base_input_path, is_readme_file=False
     return re.sub(link_pattern, replace_link, content)
 
 
+def find_docs_root(output_dir):
+    """Find the docs root (folder containing 'assets'), defaulting to the parent of output_dir."""
+    current = os.path.abspath(output_dir)
+    while True:
+        parent = os.path.dirname(current)
+        if os.path.isdir(os.path.join(parent, "assets")):
+            return parent
+        if parent == current:
+            return os.path.dirname(os.path.abspath(output_dir))
+        current = parent
+
+
+def copy_images(content, file_path, base_input_path, output_path, assets_dir, verbose=False):
+    """Copy local images referenced in content to assets_dir and rewrite their references."""
+    source_dir = os.path.dirname(file_path)
+    base_abs = os.path.abspath(base_input_path)
+
+    def relocate(url):
+        if re.match(r'^([a-zA-Z][a-zA-Z0-9+.-]*:|/|#)', url):
+            return None
+        clean_url = unquote(url.split("#")[0].split("?")[0])
+        src = os.path.abspath(os.path.join(source_dir, clean_url))
+        if not os.path.isfile(src):
+            if verbose:
+                print(f"  ⚠ Image not found: {url} (in {os.path.basename(file_path)})")
+            return None
+
+        if os.path.commonpath([src, base_abs]) == base_abs:
+            rel = os.path.relpath(src, base_abs)
+            parts = rel.split(os.sep)
+            if len(parts) > 1 and parts[0].lower() == "documentation":
+                rel = os.path.join(*parts[1:])
+        else:
+            rel = os.path.basename(src)
+
+        dest = os.path.join(assets_dir, rel)
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        shutil.copy2(src, dest)
+        if verbose:
+            print(f"  ↳ Image copied: {rel}")
+
+        new_url = os.path.relpath(dest, os.path.dirname(output_path)).replace(os.sep, "/")
+        return quote(new_url)
+
+    def replace_md(match):
+        raw_url = match.group(2)
+        url = raw_url[1:-1] if raw_url.startswith("<") else raw_url
+        new_url = relocate(url)
+        if new_url is None:
+            return match.group(0)
+        return f"![{match.group(1)}]({new_url}{match.group(3) or ''})"
+
+    def replace_html(match):
+        new_url = relocate(match.group(3))
+        if new_url is None:
+            return match.group(0)
+        return f"{match.group(1)}{match.group(2)}{new_url}{match.group(2)}"
+
+    content = re.sub(r'!\[([^\]]*)\]\(\s*(<[^>]+>|[^)\s]+)(\s+["\'][^)]*["\'])?\s*\)', replace_md, content)
+    content = re.sub(r'(<img\b[^>]*?\bsrc\s*=\s*)(["\'])([^"\']+)\2', replace_html, content)
+    return content
+
+
 def clean_output_directory(output_dir, force=False, verbose=False):
     """Clean the output directory, asking for confirmation unless force is True."""
     if not os.path.exists(output_dir):
@@ -212,7 +276,7 @@ def clean_output_directory(output_dir, force=False, verbose=False):
         return False
 
 
-def process_markdown_files(folder_path, output_dir, verbose=False):
+def process_markdown_files(folder_path, output_dir, assets_dir, verbose=False):
     """Process all Markdown files in the specified folder and add Docusaurus headers."""
     processed_count = 0
     skipped_count = 0
@@ -289,6 +353,10 @@ def process_markdown_files(folder_path, output_dir, verbose=False):
         # Fix markdown links in content
         content = "".join(lines)
         is_readme_file = os.path.basename(file_path).lower() == "readme.md"
+        try:
+            content = copy_images(content, file_path, folder_path, output_path, assets_dir, verbose)
+        except Exception as e:
+            print(f"Error copying images for {file_name}: {e}")
         fixed_content = fix_markdown_links(content, file_path, folder_path, is_readme_file)
         fixed_content = convert_admonitions(fixed_content)
         
@@ -373,6 +441,16 @@ def main():
     )
     
     parser.add_argument(
+        "-c", "--component",
+        help="Component name used for the assets folder assets/en/<component>/ (default: output folder name)"
+    )
+    
+    parser.add_argument(
+        "--docs-root",
+        help="Docs root folder containing 'assets' (default: auto-detected from output directory)"
+    )
+    
+    parser.add_argument(
         "--version",
         action="version",
         version="%(prog)s 1.0"
@@ -400,9 +478,15 @@ def main():
     if not clean_output_directory(output_dir, args.force, args.verbose):
         sys.exit(1)
     
+    component = args.component or os.path.basename(os.path.normpath(os.path.abspath(output_dir)))
+    docs_root = args.docs_root or find_docs_root(output_dir)
+    assets_dir = os.path.join(docs_root, "assets", "en", component)
+    if args.verbose:
+        print(f"Assets directory: {assets_dir}")
+    
     # Process the markdown files
     print(f"Processing Markdown files in: {args.folder_path}")
-    process_markdown_files(args.folder_path, output_dir, args.verbose)
+    process_markdown_files(args.folder_path, output_dir, assets_dir, args.verbose)
     print("Processing complete!")
 
 
