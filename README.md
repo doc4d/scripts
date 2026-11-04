@@ -20,6 +20,7 @@ Le script `docusaurusify.py` permet de copier automatiquement la documentation d
 - Normalise les noms de fichiers (minuscules, tirets)
 - Renomme `README.md` → `overview.md`
 - Supprime le préfixe `Documentation/` des chemins
+- Copie les images locales référencées (`![](...)` et `<img src>`) dans `assets/en/<composant>/` du dossier docs et met à jour les références (options `-c/--component` et `--docs-root` pour surcharger les valeurs par défaut)
 
 #### Usage
 
