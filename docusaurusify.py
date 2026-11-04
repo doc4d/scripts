@@ -295,6 +295,7 @@ def process_markdown_files(folder_path, output_dir, assets_dir, verbose=False):
     markdown_files = []
     try:
         for root, dirs, files in os.walk(folder_path):
+            dirs[:] = [d for d in dirs if d != ".github"]
             for file in files:
                 # Skip files that start with underscore (private files)
                 if file.startswith("_"):
